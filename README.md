@@ -1,3 +1,5 @@
+Haven't tested performance on ascii only strings, that is possibly much more performant
+
 Run:
 
 ```sh
