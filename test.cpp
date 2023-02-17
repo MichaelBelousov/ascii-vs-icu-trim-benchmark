@@ -2,6 +2,7 @@
 #include <string>
 #include <stdlib.h>
 #include <unicode/unistr.h>
+#include <unicode/ustream.h>
 #include <regex>
 #include <iostream>
 #include <exception>
@@ -30,6 +31,8 @@ std::string& IcuTrim (std::string& s)
     {
     auto us = icu::UnicodeString::fromUTF8(s.c_str());
     us.trim();
+    std::cout << "trimmed: '" << us << "'" << std::endl;
+    s.clear();
     us.toUTF8String(s);
     return s;
     }
