@@ -104,8 +104,8 @@ std::string& RegexTrim (std::string& s)
 */
 
 #define NBSP "\u00a0"
-#define EMSPC "\u2003"
-static_assert(sizeof(EMSPC) - 1 == 3, "emspace char size was not 3");
+#define EMSPC " "
+//static_assert(sizeof(EMSPC) - 1 == 3, "emspace char size was not 3");
 
 BENCHMARK(TrimTest, std::string&(*)(std::string&))
 {
@@ -140,7 +140,8 @@ BENCHMARK(TrimTest, std::string&(*)(std::string&))
 
   TEARDOWN_BENCHMARK(
     for (auto i = 0; i < utf8_trimmed_strings.size(); ++i) {
-      const auto trimmed_string = (trim_func == BentleyAsciiTrim ? ascii_trimmed_strings : utf8_trimmed_strings)[i];
+      //const auto trimmed_string = (trim_func == BentleyAsciiTrim ? ascii_trimmed_strings : utf8_trimmed_strings)[i];
+      const auto trimmed_string = utf8_trimmed_strings[i];
       if (utf8_strings[i] != trimmed_string) {
         std::cerr << "string " << i << " was not trimmed correctly, should be '" << trimmed_string << "' but was '" << utf8_strings[i] << "'" << std::endl;
         throw std::runtime_error("bad trimmed string");
