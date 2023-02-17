@@ -9,7 +9,9 @@
 #define U_CHARSET_IS_UTF8 1
 #include <unicode/unistr.h>
 #include <unicode/ustream.h>
-#include <unicode/bytestream.h>
+#include <unicode/utypes.h>
+#include <unicode/utf8.h>
+#include <unicode/uchar.h>
 
 #include "./criterion.hpp"
 
@@ -52,16 +54,40 @@ std::string& BentleyLocaleTrim (std::string& s)
 
 std::string& IcuTrim (std::string& s)
     {
-    icu::UnicodeString us (s.data(), s.size(), US_INV);
-    //auto us = icu::UnicodeString::fromUTF8(s.c_str());
-    //s.clear();
-    //us.toUTF8String(s);
-    us.trim();
-    //auto sink = icu::CheckedArrayByteSink(s.data(), s.capacity());
-    //us.toUTF8(sink);
-    // in theory if the utf8 is normalized trimming could increase the size of the string and break
-    // out the buffer, no? Perhaps better to use StringByteSink
-    //s.resize(sink.NumberOfBytesAppended());
+    if (s.empty ())
+        return s;
+
+    size_t firstNonSpaceIdx = 0;
+    int32_t len = s.size();
+    const char* start = s.data();
+    for (auto i = 0; i < len;) {
+      UChar32 c;
+      const auto prev_i = i;
+      U8_NEXT(start, i, len, c);
+      const auto incSize = i - prev_i;
+      if (u_isUWhiteSpace(c)) {
+        firstNonSpaceIdx += incSize;
+      } else {
+        break;
+      }
+    }
+
+    size_t lastNonSpaceIdx = len - 1;
+    const char* end = s.data() + len - 1;
+    for (auto i = len; i > firstNonSpaceIdx;) {
+      UChar32 c;
+      const auto prev_i = i;
+      U8_PREV(start, 0, i, c);
+      const auto decSize = prev_i - i;
+      if (u_isUWhiteSpace(c)) {
+        lastNonSpaceIdx -= decSize;
+      } else {
+        break;
+      }
+    }
+
+    s.erase ((s.begin () + lastNonSpaceIdx + 1), s.end ());
+    s.erase (s.begin (), (s.begin () + firstNonSpaceIdx));
     return s;
     }
 
@@ -79,7 +105,7 @@ std::string& RegexTrim (std::string& s)
 
 #define NBSP "\u00a0"
 #define EMSPC "\u2003"
-static_assert(sizeof(EMSPC) === 4);
+static_assert(sizeof(EMSPC) - 1 == 3, "emspace char size was not 3");
 
 BENCHMARK(TrimTest, std::string&(*)(std::string&))
 {
@@ -124,9 +150,9 @@ BENCHMARK(TrimTest, std::string&(*)(std::string&))
 }
 
 INVOKE_BENCHMARK_FOR_EACH(TrimTest,
-  //("BentleyAsciiTrim", BentleyAsciiTrim),
-  //("BentleyLocaleTrim", BentleyLocaleTrim),
+  ("BentleyAsciiTrim", BentleyAsciiTrim),
   ("IcuTrim", IcuTrim)
+  //("BentleyLocaleTrim", BentleyLocaleTrim),
   //("RegexTrim", RegexTrim)
 )
 
