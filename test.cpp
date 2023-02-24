@@ -107,7 +107,7 @@ std::string& RegexTrim (std::string& s)
 #define NBSP "\u00a0"
 #define EMSPC "\u2003"
 static_assert(sizeof(EMSPC) - 1 == 3, "emspace char size was not 3");
-#define TESTSPC EMSPC
+#define TESTSPC EMSPC NBSP
 
 BENCHMARK(TrimTest, std::string&(*)(std::string&))
 {
