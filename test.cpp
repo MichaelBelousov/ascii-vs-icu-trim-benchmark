@@ -66,6 +66,7 @@ std::string& IcuTrim (std::string& s)
       U8_NEXT(start, i, len, c);
       const auto incSize = i - prev_i;
       if (u_isUWhiteSpace(c)) {
+      //if (u_isspace(c)) {
         firstNonSpaceIdx += incSize;
       } else {
         break;
@@ -73,12 +74,12 @@ std::string& IcuTrim (std::string& s)
     }
 
     size_t lastNonSpaceIdx = len - 1;
-    const char* end = s.data() + len - 1;
     for (auto i = len; i > firstNonSpaceIdx;) {
       UChar32 c;
       const auto prev_i = i;
       U8_PREV(start, 0, i, c);
       const auto decSize = prev_i - i;
+      //if (u_isspace(c)) {
       if (u_isUWhiteSpace(c)) {
         lastNonSpaceIdx -= decSize;
       } else {
@@ -104,31 +105,32 @@ std::string& RegexTrim (std::string& s)
 */
 
 #define NBSP "\u00a0"
-#define EMSPC " "
-//static_assert(sizeof(EMSPC) - 1 == 3, "emspace char size was not 3");
+#define EMSPC "\u2003"
+static_assert(sizeof(EMSPC) - 1 == 3, "emspace char size was not 3");
+#define TESTSPC EMSPC
 
 BENCHMARK(TrimTest, std::string&(*)(std::string&))
 {
   SETUP_BENCHMARK(
     const auto trim_func = GET_ARGUMENT(0);
     std::vector<std::string> utf8_strings {
-      "test" EMSPC,
-      EMSPC "te" EMSPC "st" EMSPC,
-      EMSPC "te" EMSPC "st" EMSPC EMSPC EMSPC EMSPC EMSPC EMSPC EMSPC EMSPC,
+      "test" TESTSPC,
+      TESTSPC "te" TESTSPC "st" TESTSPC,
+      TESTSPC "te" TESTSPC "st" TESTSPC TESTSPC TESTSPC TESTSPC TESTSPC TESTSPC TESTSPC TESTSPC,
       "      te      st                                                      ",
       "this is a debateably long string without any non-ascii characters",
     };
     std::vector<std::string> ascii_trimmed_strings {
-      "test" EMSPC,
-      EMSPC "te" EMSPC "st" EMSPC,
-      EMSPC "te" EMSPC "st" EMSPC EMSPC EMSPC EMSPC EMSPC EMSPC EMSPC EMSPC,
+      "test" TESTSPC,
+      TESTSPC "te" TESTSPC "st" TESTSPC,
+      TESTSPC "te" TESTSPC "st" TESTSPC TESTSPC TESTSPC TESTSPC TESTSPC TESTSPC TESTSPC TESTSPC,
       "te      st",
       "this is a debateably long string without any non-ascii characters",
     };
     std::vector<std::string> utf8_trimmed_strings {
       "test",
-      "te" EMSPC "st",
-      "te" EMSPC "st",
+      "te" TESTSPC "st",
+      "te" TESTSPC "st",
       "te      st",
       "this is a debateably long string without any non-ascii characters",
     };
@@ -140,8 +142,7 @@ BENCHMARK(TrimTest, std::string&(*)(std::string&))
 
   TEARDOWN_BENCHMARK(
     for (auto i = 0; i < utf8_trimmed_strings.size(); ++i) {
-      //const auto trimmed_string = (trim_func == BentleyAsciiTrim ? ascii_trimmed_strings : utf8_trimmed_strings)[i];
-      const auto trimmed_string = utf8_trimmed_strings[i];
+      const auto trimmed_string = (trim_func == BentleyAsciiTrim ? ascii_trimmed_strings : utf8_trimmed_strings)[i];
       if (utf8_strings[i] != trimmed_string) {
         std::cerr << "string " << i << " was not trimmed correctly, should be '" << trimmed_string << "' but was '" << utf8_strings[i] << "'" << std::endl;
         throw std::runtime_error("bad trimmed string");
